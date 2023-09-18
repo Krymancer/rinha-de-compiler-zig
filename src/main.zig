@@ -21,11 +21,18 @@ pub fn readProgramFromStdin(allocator: std.mem.Allocator) ![]const u8 {
     return content.toOwnedSlice();
 }
 
+pub fn parseProgramFromJsonString(json_string: []const u8, allocator: std.mem.Allocator) !Program {
+    const program_json = try json.parseFromSlice(Program, allocator, json_string, .{});
+    defer program_json.deinit();
+    return program_json.value;
+}
+
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
 
     const input = try readProgramFromStdin(allocator);
-    std.debug.print("Loaded program: {s}", .{input});
+    const program = try parseProgramFromJsonString(input, allocator);
+    std.debug.print("Loaded program: {s}", .{program.name});
 }
