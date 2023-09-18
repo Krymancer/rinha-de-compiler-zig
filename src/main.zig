@@ -1,43 +1,31 @@
 const std = @import("std");
+const json = @import("std").json;
 
-const Location = struct {
-    start: usize,
-    end: usize,
-    filine: []const u8,
-};
+const Print = struct { kind: []const u8, value: []const u8, location: Location };
+const Expression = struct { kind: []const u8, value: Print, location: Location };
+const Location = struct { start: usize, end: usize, filename: []const u8 };
+const Program = struct { name: []const u8, expression: Expression, location: Location };
 
-const Term = union {
-    Int: i64,
-    Float: f64,
-    String: []const u8,
-    Bool: bool,
-};
-
-const Str = struct { value: []const u8, location: Location };
-
-const Print = struct { value: Term, location: Location };
-
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
+pub fn readProgramFromStdin(allocator: std.mem.Allocator) ![]const u8 {
     const stdin = std.io.getStdIn();
-
     var buffer: [4096]u8 = undefined;
-
     var content = std.ArrayList(u8).init(allocator);
     defer content.deinit();
 
     while (true) {
         const bytesRead = try stdin.read(buffer[0..]);
-        if (bytesRead == 0) {
-            break;
-        } else {
-            try content.appendSlice(buffer[0..bytesRead]);
-        }
+        if (bytesRead == 0) break;
+        try content.appendSlice(buffer[0..bytesRead]);
     }
 
-    const inputSlice = content.items;
-    std.debug.print("Saved content: {s}", .{inputSlice});
+    return content.toOwnedSlice();
+}
+
+pub fn main() !void {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const input = try readProgramFromStdin(allocator);
+    std.debug.print("Loaded program: {s}", .{input});
 }
